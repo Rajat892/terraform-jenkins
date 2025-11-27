@@ -11,8 +11,8 @@ module "compute" {
   subnet_self_link = module.network.subnet_self_link
 }
 
-module "storage" {
-  source = "../../modules/storage"
-  project_id = local.project_id
-  environment = "dev"
-}
+# module "storage" {
+#   source = "../../modules/storage"
+#   project_id = local.project_id
+#   environment = "dev"
+# }
