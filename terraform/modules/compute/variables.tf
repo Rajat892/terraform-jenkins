@@ -4,3 +4,6 @@ variable "project_id" {
 variable "environment" {
     type = string
     }
+variable "subnet_self_link" {
+  type = string
+}
