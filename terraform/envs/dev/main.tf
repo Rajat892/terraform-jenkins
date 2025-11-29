@@ -1,8 +1,8 @@
-locals {
-  project_id = "yantriks00"
-  region     = "us-central1"
-  zone       = "us-central1-a"
-}
+# locals {
+#   project_id = "yantriks00"
+#   region     = "us-central1"
+#   zone       = "us-central1-a"
+# }
 
 module "network" {
   source = "../../modules/network"

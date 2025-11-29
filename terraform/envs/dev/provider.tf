@@ -4,6 +4,7 @@ locals {
   provider_id      = "jenkins-oidc"
   project_number   = "496490171208"  # Change this
   region  = "us-central1"
+  zone       = "us-central1-a"
 }
 
 provider "google" {
