@@ -14,8 +14,10 @@ provider "google" {
   # Workload Identity Federation
   impersonate_service_account = "terraform-sa@${local.project_id}.iam.gserviceaccount.com"
 
-  # WIF Credential Configuration (generated in Jenkins pipeline)
-  credentials = file("${path.cwd}/wif-creds.json")
+#   # WIF Credential Configuration (generated in Jenkins pipeline)
+#   credentials = file("${path.cwd}/wif-creds.json")
+  # Read credentials from env (GOOGLE_APPLICATION_CREDENTIALS)
+  disable_credentials_discovery = true
 }
 
 provider "google-beta" {
@@ -23,4 +25,5 @@ provider "google-beta" {
   region  = local.region
   impersonate_service_account = "terraform-sa@${local.project_id}.iam.gserviceaccount.com"
   credentials = file("${path.cwd}/wif-creds.json")
+  disable_credentials_discovery = true
 }
