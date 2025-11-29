@@ -1,12 +1,12 @@
 module "network" {
   source = "../../modules/network"
-  project_id = local.project_id
+  project_id = "yantriks00"
   environment = "dev"
 }
 
 module "compute" {
   source = "../../modules/compute"
-  project_id = local.project_id
+  project_id = "yantriks00"
   environment = "dev"
   subnet_self_link = module.network.subnet_self_link
 }

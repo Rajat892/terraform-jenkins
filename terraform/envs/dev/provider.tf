@@ -7,7 +7,7 @@ locals {
 
 provider "google" {
   project = local.project_id
-  region  = "us-central1"
+  region  = local.region
 
   # Workload Identity Federation
   impersonate_service_account = "terraform-sa@${local.project_id}.iam.gserviceaccount.com"
@@ -18,7 +18,7 @@ provider "google" {
 
 provider "google-beta" {
   project = local.project_id
-  region  = "us-central1"
+  region  = local.region
   impersonate_service_account = "terraform-sa@${local.project_id}.iam.gserviceaccount.com"
   credentials = file("${path.cwd}/wif-creds.json")
 }

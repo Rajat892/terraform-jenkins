@@ -6,25 +6,35 @@ pipeline {
     }
 
     environment {
-        ENV_DIR        = "terraform/envs/${params.ENV}"
-        WORKSPACE_DIR  = "${WORKSPACE}"
-        PROJECT_ID     = "yantriks00"
-        PROJECT_NUMBER = "496490171208"
-        POOL_ID        = "jenkins-pool"
-        PROVIDER_ID    = "jenkins-oidc"
-        SERVICE_ACCOUNT= "terraform-sa@yantriks00.iam.gserviceaccount.com"
-        WIF_PROVIDER   = "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/providers/${PROVIDER_ID}"
-        WIF_CREDS      = "${WORKSPACE}/wif-creds.json"
+        PROJECT_ID      = "yantriks00"
+        PROJECT_NUMBER  = "496490171208"
+        POOL_ID         = "jenkins-pool"
+        PROVIDER_ID     = "jenkins-oidc"
+        SERVICE_ACCOUNT = "terraform-sa@yantriks00.iam.gserviceaccount.com"
+        WIF_PROVIDER    = "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/providers/${PROVIDER_ID}"
     }
 
     stages {
-        stage("Workspace cleanup") {
+
+        stage('Workspace cleanup') {
             steps { cleanWs() }
         }
 
-        stage("Checkout") {
+        stage('Checkout') {
             steps {
                 git url: 'https://github.com/Rajat892/terraform-jenkins.git', branch: 'main'
+            }
+        }
+
+        stage('Set Environment Variables') {
+            steps {
+                script {
+                    // Directory for the environment
+                    env.ENV_DIR = "terraform/envs/${params.ENV}"
+
+                    // Path for the WIF credentials JSON
+                    env.WIF_CREDS = "${env.ENV_DIR}/wif-creds.json"
+                }
             }
         }
 
@@ -34,35 +44,44 @@ pipeline {
                     sh """
                         set -e
 
-                        # Save Jenkins OIDC token
                         echo "\$OIDC_TOKEN" > oidc-token.jwt
 
-                        # Create WIF credential JSON
+                        # 1. Create WIF credential config JSON
                         gcloud iam workload-identity-pools create-cred-config \
                             "$WIF_PROVIDER" \
                             --service-account="$SERVICE_ACCOUNT" \
-                            --output-file="$WIF_CREDS" \
+                            --output-file="wif-creds.json" \
                             --credential-source-file=oidc-token.jwt
 
-                        # Disable VM metadata auth, force WIF usage
-                        export GOOGLE_APPLICATION_CREDENTIALS="$WIF_CREDS"
+                        # 2. Patch service account impersonation into the JSON
+                        jq '.service_account_impersonation_url = "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT}:generateAccessToken"' \
+                            wif-creds.json > wif-creds-imp.json
+
+                        mv wif-creds-imp.json wif-creds.json
+
+                        # 3. Export the WIF credentials (disable metadata ADC)
+                        export GOOGLE_APPLICATION_CREDENTIALS="wif-creds.json"
                         export CLOUDSDK_AUTH_DISABLE_GCE_METADATA=1
 
-                        # Generate short-lived token for Terraform backend
-                        export GOOGLE_OAUTH_ACCESS_TOKEN=\$(gcloud auth print-access-token)
-
-                        echo "WIF authentication ready"
-                        gcloud auth list
+                        echo "Testing auth..."
+                        gcloud auth list --filter=status:ACTIVE
+                        gcloud auth print-access-token
                     """
                 }
             }
         }
+
+
 
         stage('Terraform Init') {
             steps {
                 sh """
                     set -e
                     cd "$ENV_DIR"
+
+                    # Ensure Terraform GCS backend uses WIF token
+                    export GOOGLE_OAUTH_ACCESS_TOKEN=\$(gcloud auth print-access-token)
+
                     terraform init
                 """
             }
@@ -73,9 +92,26 @@ pipeline {
                 sh """
                     set -e
                     cd "$ENV_DIR"
+
+                    # Ensure Terraform GCS backend uses WIF token
+                    export GOOGLE_OAUTH_ACCESS_TOKEN=\$(gcloud auth print-access-token)
+
                     terraform plan
                 """
             }
         }
+
+        // stage('Terraform Apply (Optional)') {
+        //     when {
+        //         expression { params.ENV != 'prod' } // Only auto-apply non-prod
+        //     }
+        //     steps {
+        //         sh """
+        //             cd "$ENV_DIR"
+        //             terraform apply -auto-approve
+        //         """
+        //     }
+        // }
+
     }
 }
