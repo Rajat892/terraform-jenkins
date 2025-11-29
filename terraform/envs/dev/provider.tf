@@ -3,6 +3,7 @@ locals {
   pool_id          = "jenkins-pool"
   provider_id      = "jenkins-oidc"
   project_number   = "496490171208"  # Change this
+  region  = "us-central1"
 }
 
 provider "google" {
