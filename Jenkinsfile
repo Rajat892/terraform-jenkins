@@ -2,7 +2,8 @@ pipeline {
     agent { label 'vinod' }
 
     parameters {
-        choice(name: 'ENV', choices: ['dev', 'qa', 'prod'], description: 'Deployment environment')
+        choice(name: 'ENV',  choices: ['dev', 'qa', 'prod'],  description: 'Target environment')
+        choice(name: 'MODE', choices: ['create', 'delete'],   description: 'Action')
     }
 
     environment {
@@ -20,7 +21,7 @@ pipeline {
             steps { cleanWs() }
         }
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
                 git url: 'https://github.com/Rajat892/terraform-jenkins.git', branch: 'main'
             }
@@ -63,7 +64,7 @@ pipeline {
                         export GOOGLE_APPLICATION_CREDENTIALS="wif-creds.json"
                         export CLOUDSDK_AUTH_DISABLE_GCE_METADATA=1
 
-                        echo "Testing auth..."
+                        echo "Testing GCP authentication..."
                         gcloud auth list --filter=status:ACTIVE
                         gcloud auth print-access-token
                     """
@@ -77,7 +78,8 @@ pipeline {
             steps {
                 sh """
                     set -e
-                    cd "$ENV_DIR"
+                    set +x
+                    cd "${ENV_DIR}"
 
                     # Ensure Terraform GCS backend uses WIF token
                     export GOOGLE_OAUTH_ACCESS_TOKEN=\$(gcloud auth print-access-token)
@@ -88,10 +90,12 @@ pipeline {
         }
 
         stage('Terraform Plan') {
+            when { expression { params.MODE == 'create' } }
             steps {
                 sh """
                     set -e
-                    cd "$ENV_DIR"
+                    set +x
+                    cd "${ENV_DIR}"
 
                     # Ensure Terraform GCS backend uses WIF token
                     export GOOGLE_OAUTH_ACCESS_TOKEN=\$(gcloud auth print-access-token)
@@ -101,17 +105,35 @@ pipeline {
             }
         }
 
-        // stage('Terraform Apply (Optional)') {
-        //     when {
-        //         expression { params.ENV != 'prod' } // Only auto-apply non-prod
-        //     }
-        //     steps {
-        //         sh """
-        //             cd "$ENV_DIR"
-        //             terraform apply -auto-approve
-        //         """
-        //     }
-        // }
+        stage('Terraform Apply') {
+            when {
+                expression { params.MODE == 'create' && params.ENV != 'prod' } // Only auto-apply non-prod
+            }
+            steps {
+                sh """
+                    set -e
+                    set +x # it will not expose secrets on the console
+                    cd "${ENV_DIR}"
 
+                    export GOOGLE_OAUTH_ACCESS_TOKEN=\$(gcloud auth print-access-token)
+                    terraform apply -auto-approve
+                """
+            }
+        }
+        stage('Terraform Destroy') {
+            when {
+                expression { params.MODE == 'delete' && params.ENV != 'prod' } // Only auto-apply non-prod
+            }
+            steps {
+                sh """
+                    set -e
+                    set +x
+                    cd "${ENV_DIR}"
+
+                    export GOOGLE_OAUTH_ACCESS_TOKEN=\$(gcloud auth print-access-token)
+                    terraform destroy -auto-approve
+                """
+            }
+        }
     }
 }
