@@ -61,8 +61,8 @@ pipeline {
                         mv wif-creds-imp.json wif-creds.json
 
                         # 3. Export the WIF credentials (disable metadata ADC)
-                        export GOOGLE_APPLICATION_CREDENTIALS="wif-creds.json"
-                        export CLOUDSDK_AUTH_DISABLE_GCE_METADATA=1
+                        #export GOOGLE_APPLICATION_CREDENTIALS="wif-creds.json"
+                        #export CLOUDSDK_AUTH_DISABLE_GCE_METADATA=1
 
                         echo "Testing GCP authentication..."
                         gcloud auth list --filter=status:ACTIVE

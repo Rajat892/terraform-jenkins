@@ -1,0 +1,85 @@
+name: Terraform GCP via WIF
+
+on:
+  workflow_dispatch:
+    inputs:
+      ENV:
+        description: "Environment"
+        type: choice
+        options: [dev, qa, prod]
+        required: true
+      MODE:
+        description: "create or delete"
+        type: choice
+        options: [create, delete]
+        required: true
+
+permissions:
+  contents: read
+  id-token: write   # REQUIRED for OIDC → Google WIF
+  actions: read
+
+env:
+  PROJECT_ID: "yantriks00"
+  PROJECT_NUMBER: "496490171208"
+  POOL_ID: "github-pool"
+  PROVIDER_ID: "github-oidc"
+  SERVICE_ACCOUNT: "terraform-sa@yantriks00.iam.gserviceaccount.com"
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # 1. Checkout repo
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Authenticate to Google Cloud using GitHub → WIF
+      - name: Authenticate to GCP (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ env.POOL_ID }}/providers/${{ env.PROVIDER_ID }}"
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          token_format: "access_token"
+
+      - name: Verify GCP Authentication
+        run: |
+          gcloud auth list
+          gcloud auth print-access-token
+
+      # 3. Select Terraform environment
+      - name: Set environment directory
+        id: envdir
+        run: |
+          echo "ENV_DIR=terraform/envs/${{ github.event.inputs.ENV }}" >> $GITHUB_OUTPUT
+
+      # 4. Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 5. Terraform Init
+      - name: Terraform Init
+        working-directory: ${{ steps.envdir.outputs.ENV_DIR }}
+        run: terraform init
+
+      # 6. Terraform Plan (create only)
+      - name: Terraform Plan
+        if: ${{ github.event.inputs.MODE == 'create' }}
+        working-directory: ${{ steps.envdir.outputs.ENV_DIR }}
+        run: terraform plan
+
+      # 7. Terraform Apply (non-prod only)
+      - name: Terraform Apply
+        if: ${{ github.event.inputs.ENV != 'prod' && github.event.inputs.MODE == 'create' }}
+        working-directory: ${{ steps.envdir.outputs.ENV_DIR }}
+        run: terraform apply -auto-approve
+
+      # 8. Terraform Destroy (non-prod only)
+      - name: Terraform Destroy
+        if: ${{ github.event.inputs.MODE == 'delete' && github.event.inputs.ENV != 'prod' }}
+        working-directory: ${{ steps.envdir.outputs.ENV_DIR }}
+        run: terraform destroy -auto-approve
