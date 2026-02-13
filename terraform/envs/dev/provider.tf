@@ -1,5 +1,5 @@
 locals {
-  project_id       = "yantriks00"
+  project_id       = "yantrrik"
   pool_id          = "jenkins-pool"
   provider_id      = "jenkins-oidc"
   project_number   = "68726622663"  # Change this
