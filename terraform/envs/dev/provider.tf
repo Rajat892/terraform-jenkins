@@ -2,9 +2,9 @@ locals {
   project_id       = "yantriks00"
   pool_id          = "jenkins-pool"
   provider_id      = "jenkins-oidc"
-  project_number   = "496490171208"  # Change this
-  region  = "us-central1"
-  zone       = "us-central1-a"
+  project_number   = "68726622663"  # Change this
+  region  = "asia-south2"
+  zone       = "asia-south2-b"
 }
 
 provider "google" {
