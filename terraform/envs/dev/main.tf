@@ -1,9 +1,3 @@
-# locals {
-#   project_id = "yantriks00"
-#   region     = "us-central1"
-#   zone       = "us-central1-a"
-# }
-
 module "network" {
   source = "../../modules/network"
   project_id  = local.project_id
@@ -24,3 +18,15 @@ module "compute" {
 #   project_id = local.project_id
 #   environment = "dev"
 # }
+
+module "gke-cluster" {
+  source = "../../modules/gke-cluster"
+  project_id = local.project_id
+  environment = var.environment
+  cluster_name = local.cluster
+  subnet_self_link = module.network.subnet_self_link
+  net_self_link = module.network.network_self_link
+  region = local.region
+  zone = local.zone
+
+}

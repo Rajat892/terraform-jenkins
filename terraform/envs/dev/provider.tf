@@ -5,6 +5,7 @@ locals {
   project_number   = "68726622663"  # Change this
   region  = "asia-south2"
   zone       = "asia-south2-b"
+  cluster = "my-test-cluster"
 }
 
 provider "google" {
