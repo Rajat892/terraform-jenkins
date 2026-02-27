@@ -19,14 +19,14 @@ module "compute" {
 #   environment = "dev"
 # }
 
-module "gke-cluster" {
-  source = "../../modules/gke-cluster"
-  project_id = local.project_id
-  environment = var.environment
-  cluster_name = local.cluster
-  subnet_self_link = module.network.subnet_self_link
-  net_self_link = module.network.network_self_link
-  region = local.region
-  zone = local.zone
-
-}
+#module "gke-cluster" {
+#  source = "../../modules/gke-cluster"
+#  project_id = local.project_id
+#  environment = var.environment
+#  cluster_name = local.cluster
+#  subnet_self_link = module.network.subnet_self_link
+#  net_self_link = module.network.network_self_link
+#  region = local.region
+#  zone = local.zone
+#
+#}
