@@ -7,11 +7,11 @@ pipeline {
     }
 
     environment {
-        PROJECT_ID      = "yantriks00"
-        PROJECT_NUMBER  = "496490171208"
+        PROJECT_ID      = "yantrrik"
+        PROJECT_NUMBER  = "68726622663"
         POOL_ID         = "jenkins-pool"
         PROVIDER_ID     = "jenkins-oidc"
-        SERVICE_ACCOUNT = "terraform-sa@yantriks00.iam.gserviceaccount.com"
+        SERVICE_ACCOUNT = "terraform-sa@yantrrik.iam.gserviceaccount.com"
         WIF_PROVIDER    = "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL_ID}/providers/${PROVIDER_ID}"
     }
 
@@ -44,7 +44,7 @@ pipeline {
                 withCredentials([string(credentialsId: 'jenkins-oidc-token', variable: 'OIDC_TOKEN')]) {
                     sh """
                         set -e
-
+                        set +x
                         echo "\$OIDC_TOKEN" > oidc-token.jwt
 
                         # 1. Create WIF credential config JSON
